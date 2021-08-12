@@ -8,8 +8,9 @@
 MLMG and Linear Operator Classes
 ================================
 
-``MLMG`` is a class for solving the linear system using the geometric
-multigrid method.  The constructor of ``MLMG`` takes the reference to
+Multi-Level Multi-Grid or ``MLMG`` is a class for solving the linear
+system using the geometric multigrid method.  The
+constructor of ``MLMG`` takes the reference to
 :cpp:`MLLinOp`, an abstract base class of various linear operator
 classes, :cpp:`MLABecLaplacian`, :cpp:`MLPoisson`,
 :cpp:`MLNodeLaplacian`, etc.  We choose the type of linear operator
