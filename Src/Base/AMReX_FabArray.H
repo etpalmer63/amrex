@@ -669,6 +669,13 @@ public:
     * is restricted to the num_comp components starting at src_comp
     * in the FabArray src, with the destination components in this
     * FabArray starting at dest_comp.
+    *
+    * \param src Source FabArray
+    * \param src_comp the index of the beginning component in the source FabArray
+    * \param dest_comp the index of the beginning component in the destination FabArray
+    * \param num_comp number of components to copy
+    * \param 
+    *
     */
     void ParallelCopy (const FabArray<FAB>& src,
                        int                  src_comp,
