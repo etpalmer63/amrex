@@ -262,9 +262,9 @@ to produce useful profiling reports. As such, the possible region options are pu
 Scoped Regions
 ~~~~~~~~~~~~~~
 
-When using the Tiny Profiler, the only available region macro is the scoped macro. To create a region
-that profiles the `MyFuncs` code block, including all timers in the "Additional Code" regions, add
-macros in the following way:
+When using the Tiny Profiler, the only method available to ioslate a region for instruamentation
+is with scoping. To create a region that profiles the `MyFuncs` code block, including
+all timers in the "Additional Code" regions, add macros in the following way:
 
 ::
 
@@ -288,6 +288,33 @@ macros in the following way:
                  <Additional Code C>
               }
           }
+
+The ``MyFuncs`` region appears in Tiny Profilier output as an additional table.
+The following example, mimics the above code. In it, the region is indicated by
+``REG::MyFuncs``.
+
+.. code-block:: console
+
+    BEGIN REGION MyFuncs
+
+    -------------------------------------------------------------
+    Name          NCalls  Excl. Min  Excl. Avg  Excl. Max   Max %
+    -------------------------------------------------------------
+    MyFunc0         1000      4.402      4.402      4.402  14.19%
+    MyFunc1         1000       4.39       4.39       4.39  14.15%
+    REG::MyFuncs    1000     0.0168     0.0168     0.0168   0.05%
+    -------------------------------------------------------------
+
+    -------------------------------------------------------------
+    Name          NCalls  Incl. Min  Incl. Avg  Incl. Max   Max %
+    -------------------------------------------------------------
+    REG::MyFuncs    1000      8.809      8.809      8.809  28.39%
+    MyFunc0         1000      4.402      4.402      4.402  14.19%
+    MyFunc1         1000       4.39       4.39       4.39  14.15%
+    -------------------------------------------------------------
+
+    END REGION MyFuncs
+
 
 Named Regions
 ~~~~~~~~~~~~~~
