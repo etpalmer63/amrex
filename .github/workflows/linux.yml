@@ -162,10 +162,6 @@ jobs:
             -DCMAKE_Fortran_COMPILER=$(which gfortran-10)
         make -j 2
 
-        make install
-        make test_install
-
-        
         ctest 
 
   tests_clang:
