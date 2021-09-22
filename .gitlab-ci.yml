@@ -18,8 +18,7 @@ job1:
     extends:
         - .common_build
     script: 
-        - cd $PWD/exec/multispec/
-        - make -j 4 DIM=3 USE_PARTICLES=FALSE TINY_PROFILE=FALSE
+        - echo "This is where you compile the things."
 
 
 variables: 
