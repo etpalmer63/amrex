@@ -162,7 +162,11 @@ jobs:
             -DCMAKE_Fortran_COMPILER=$(which gfortran-10)
         make -j 2
 
-        ctest --output-on-failure
+        make install
+        make test_install
+
+        
+        ctest 
 
   tests_clang:
     name: Clang@6.0 C++14 SP Particles DP Mesh Debug [tests]
