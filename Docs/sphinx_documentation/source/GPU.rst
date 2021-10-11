@@ -18,7 +18,7 @@ for AMD and DPC++ for Intel. This will be designated with ``CUDA/HIP/DPC++``
 throughout the documentation.  However, application teams can also use
 OpenACC or OpenMP in their individual codes.
 
-At this time, AMReX does not support cross-native language compliation
+At this time, AMReX does not support cross-native language compilation
 (HIP for non-AMD systems and DPC++ for non Intel systems).  It may work with
 a given version, but AMReX does not track or guarantee such functionality.
 
@@ -508,21 +508,59 @@ initial size for other arenas is 8388608 (i.e., 8 MB).  For
 with ``amrex.the_managed_arena_init_size`` and
 ``amrex.the_device_arena_init_size``, respectively, if they are not an alias
 to :cpp:`The_Arena()`.  For :cpp:`The_Pinned_Arena()`, it can be changed
-with ``amrex.the_pinned_arena_init_size``.  The user can also specify a
+with ``amrex.the_pinned_arena_init_size``.
+
+The user can also specify a
 release threshold for these arenas.  If the memory usage in an arena is
 below the threshold, the arena will keep the memory for later reuse,
 otherwise it will try to release memory back to the system if it is not
 being used.  By default, the release threshold for :cpp:`The_Arena()` is set
-to be the maximum of initial allocation size and 3/4 of the total device
+to be the maximum of, the initial allocation size and 3/4 of the total device
 memory, and it can be changed with a parameter,
 ``amrex.the_arena_release_threshold``.  For :cpp:`The_Pinned_Arena()`, the
 default release threshold is the size of the total device memory, and the
 runtime parameter is ``amrex.the_pinned_arena_release_threshold``.  If it is
 a separate arena, :cpp:`The_Device_Area()` or :cpp:`The_Managed_Arena()`
-does not release memory by default, and this can be changed with
+does not release memory by default. This can be changed with
 ``amrex.the_device_arena_release_threshold`` or
 ``amrex.the_managed_arena_release_threshold``.  Note that the units for all
 the parameter discussed above are bytes.
+
+
+.. table:: Summary of Arena Memory Inital Allocations
+
+    +---------------------+---------------------------+-----------------------------------------+
+    | Arena               |  Default Size (Bytes)     |        Runtime Parameter                |
+    +=====================+===========================+=========================================+
+    | The_Arena()         |  3/4 Total Device Memory  |  ``amrex.the_arena_init_size``          |
+    +---------------------+---------------------------+-----------------------------------------+
+    | The_Device_Arena()  |  8388608 (8 MB)           |  ``amrex.the_device_init_size``\*       |
+    +---------------------+---------------------------+-----------------------------------------+
+    | The_Managed_Arena() |  8388608 (8 MB)           |  ``amrex.the_managed_arena_init_size``\*|
+    +---------------------+---------------------------+-----------------------------------------+
+    | The_Pinned_Arena()  |  8388608 (8 MB)           |  ``amrex.the_pinned_arena_init_size``   |
+    +---------------------+---------------------------+-----------------------------------------+
+    | \*If not aliased to :cpp:`The_Arena()`                                                    |
+    +-------------------------------------------------------------------------------------------+
+
+
+
+.. table:: Summary of Arena Memory Release Thresholds
+
+    +---------------------+---------------------------+-------------------------------------------------+
+    | Arena               | Default Threshold (Bytes) |        Runtime Parameter                        |
+    +=====================+===========================+=================================================+
+    | The_Arena()         |  Maximum Allocated or     |  ``amrex.the_arena_release_threshold``          |
+    |                     |  3/4 Total Device Memory  |                                                 |
+    +---------------------+---------------------------+-------------------------------------------------+
+    | The_Device_Arena()  |  Does Not Release         |  ``amrex.the_device_release_threshold``         |
+    +---------------------+---------------------------+-------------------------------------------------+
+    | The_Managed_Arena() |  Does Not Release         |  ``amrex.the_managed_arena_release_threshold``  |
+    +---------------------+---------------------------+-------------------------------------------------+
+    | The_Pinned_Arena()  |  Total Device Memory      |  ``amrex.the_pinned_arena_release_threshold``   |
+    +---------------------+---------------------------+-------------------------------------------------+
+
+
 
 If you want to print out the current memory usage
 of the Arenas, you can call :cpp:`amrex::Arena::PrintUsage()`.
