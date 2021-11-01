@@ -38,7 +38,6 @@ set(_input_files inputs-ci)
 list(TRANSFORM _input_files PREPEND ${_sv_exe_dir})
 
 setup_test(_sv_sources _input_files
-   HAS_FORTRAN_MODULES
    BASE_NAME Advection_AmrLevel_SV
    RUNTIME_SUBDIR SingleVortex)
 
@@ -62,7 +61,6 @@ set(_input_files inputs-ci)
 list(TRANSFORM _input_files PREPEND ${_uv_exe_dir})
 
 setup_test(_uv_sources _input_files
-        #   HAS_FORTRAN_MODULES
    BASE_NAME Advection_AmrLevel_UV
    RUNTIME_SUBDIR UniformVelocity)
 
