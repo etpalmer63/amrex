@@ -15,7 +15,7 @@ endif ()
 #
 # Sources common to both cases
 #
-set(_sources Adv_F.H  AmrLevelAdv.cpp  AmrLevelAdv.H  LevelBldAdv.cpp  Adv.cpp  Tagging_params.cpp  bc_nullfill.cpp  main.cpp)
+set(_sources AmrLevelAdv.cpp  AmrLevelAdv.H  LevelBldAdv.cpp  Adv.cpp  Tagging_params.cpp  bc_nullfill.cpp  main.cpp)
 
 list(APPEND _sources  Src_K/slope_K.H  Src_K/flux_${AMReX_SPACEDIM}d_K.H  Src_K/Adv_K.H  Src_K/tagging_K.H)
 
