@@ -2,6 +2,8 @@ if (AMReX_SPACEDIM EQUAL 1)
    return()
 endif ()
 
+add_compile_options("/utf-8")
+add_compile_options("/utf-8")
 
 #
 # This test works for both 2D and 3D builds
