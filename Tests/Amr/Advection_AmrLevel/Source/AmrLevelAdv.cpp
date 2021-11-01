@@ -785,7 +785,7 @@ AmrLevelAdv::read_params ()
 }
 
 //HACK added by me to address compile error
-bool AmrLevelAdv::read_params::done;
+//bool AmrLevelAdv::read_params::done;
 
 
 void

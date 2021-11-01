@@ -16,8 +16,8 @@ endif ()
 # Sources common to both cases
 #
 set(_sources Adv.cpp
-             AmrLevelAdv.cpp
              AmrLevelAdv.H
+             AmrLevelAdv.cpp
              bc_nullfill.cpp
              Kernels.H
              LevelBldAdv.cpp
