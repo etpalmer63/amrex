@@ -1,4 +1,3 @@
-#include <AMReX_REAL.H>
 #include <AMReX_MultiFab.H>
 
 /**

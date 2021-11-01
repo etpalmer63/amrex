@@ -1,6 +1,5 @@
 
 #include <AMReX_MultiFab.H>
-#include <AMReX_REAL.H>
 
 /**
  * Initialize Data on Multifab
