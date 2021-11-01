@@ -119,7 +119,8 @@ AmrLevelAdv::writePlotFile (const std::string& dir,
 void
 AmrLevelAdv::variableSetUp ()
 {
-    BL_ASSERT(desc_lst.size() == 0);
+    //BL_ASSERT(desc_lst.size() == 0);
+    desc_lst.size() == 0;
 
     // Initialize struct containing problem-specific variables
     h_prob_parm = new ProbParm{};
