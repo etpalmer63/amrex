@@ -19,10 +19,9 @@ set(_sources Adv.cpp
              AmrLevelAdv.H
              AmrLevelAdv.cpp
              bc_nullfill.cpp
-             Kernels.H
              LevelBldAdv.cpp
-             main.cpp
-             Tagging_params.cpp)
+             Tagging_params.cpp
+             main.cpp)
 
 list(APPEND _sources  Src_K/slope_K.H
                       Src_K/flux_${AMReX_SPACEDIM}d_K.H
