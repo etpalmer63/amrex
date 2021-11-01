@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 
+#include <AMReX.H>
 #include <AMReX_Amr.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_ParallelDescriptor.H>
