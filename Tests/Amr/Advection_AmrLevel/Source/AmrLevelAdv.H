@@ -18,7 +18,7 @@
 #endif
 
 // Problem-dependent struct. Defined under Exec directory.
-#include "Prob_Parm.H"
+#include <Prob_Parm.H>
 
 enum StateType { Phi_Type = 0,
                  NUM_STATE_TYPE };

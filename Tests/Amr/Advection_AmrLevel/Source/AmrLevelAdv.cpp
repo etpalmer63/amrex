@@ -3,9 +3,8 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_GpuMemory.H>
 
-#include "AmrLevelAdv.H"
-#include "Prob.H"
-#include "Kernels.H"
+#include <AmrLevelAdv.H>
+#include <Kernels.H>
 
 
 using namespace amrex;
