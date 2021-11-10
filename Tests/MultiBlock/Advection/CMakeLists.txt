@@ -1,3 +1,8 @@
+if(AMReX_SPACEDIM EQUAL 1)
+   return()
+endif()
+
+
 set(_sources     main.cpp)
 set(_input_files )
 
