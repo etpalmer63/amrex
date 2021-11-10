@@ -3,7 +3,7 @@ name: hip
 on: [push, pull_request]
 
 concurrency:
-  group: ${{ github.head_ref }}-hip
+  group: ${{ github.ref }}-${{ github.head_ref }}-hip
   cancel-in-progress: true
 
 jobs:
@@ -34,6 +34,11 @@ jobs:
         hipcc --version
         which clang
         which clang++
+
+        # "mpic++ --showme" forgets open-pal in Ubuntu 20.04 + OpenMPI 4.0.3
+        #   https://bugs.launchpad.net/ubuntu/+source/openmpi/+bug/1941786
+        #   https://github.com/open-mpi/ompi/issues/9317
+        export LDFLAGS="-lopen-pal"
 
         cmake -S . -B build_nofortran                     \
             -DCMAKE_VERBOSE_MAKEFILE=ON                   \
@@ -71,6 +76,12 @@ jobs:
       run: |
         source /etc/profile.d/rocm.sh
         hipcc --version
+
+        # "mpic++ --showme" forgets open-pal in Ubuntu 20.04 + OpenMPI 4.0.3
+        #   https://bugs.launchpad.net/ubuntu/+source/openmpi/+bug/1941786
+        #   https://github.com/open-mpi/ompi/issues/9317
+        export LDFLAGS="-lopen-pal"
+
         cmake -S . -B build_full_legacywrapper            \
             -DCMAKE_VERBOSE_MAKEFILE=ON                   \
             -DAMReX_EB=OFF                                \
