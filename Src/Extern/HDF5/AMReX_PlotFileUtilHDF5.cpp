@@ -499,18 +499,7 @@ void WriteMultiLevelPlotfileHDF5SingleDset (const std::string& plotfilename,
     if (fid < 0)
         FileOpenFailed(filename.c_str());
 
-    RealDescriptor *whichRD = nullptr;
-    if(FArrayBox::getFormat() == FABio::FAB_NATIVE) {
-        whichRD = FPC::NativeRealDescriptor().clone();
-    } else if(FArrayBox::getFormat() == FABio::FAB_NATIVE_32) {
-        whichRD = FPC::Native32RealDescriptor().clone();
-    } else if(FArrayBox::getFormat() == FABio::FAB_IEEE_32) {
-        whichRD = FPC::Ieee32NormalRealDescriptor().clone();
-    } else {
-        whichRD = FPC::NativeRealDescriptor().clone(); // to quiet clang static analyzer
-        Abort("VisMF::Write unable to execute with the current fab.format setting.  Use NATIVE, NATIVE_32 or IEEE_32");
-    }
-
+    auto whichRD = FArrayBox::getDataDescriptor();
     bool doConvert(*whichRD != FPC::NativeRealDescriptor());
     int whichRDBytes(whichRD->numBytes());
 
@@ -588,7 +577,7 @@ void WriteMultiLevelPlotfileHDF5SingleDset (const std::string& plotfilename,
 #endif
         if(centerdataset < 0) { std::cout << "Create center dataset failed! ret = " << centerdataset << std::endl; break;}
 
-        Vector<unsigned long long> offsets(sortedGrids.size() + 1);
+        Vector<unsigned long long> offsets(sortedGrids.size() + 1, 0);
         unsigned long long currentOffset(0L);
         for(int b(0); b < sortedGrids.size(); ++b) {
             offsets[b] = currentOffset;
@@ -596,21 +585,23 @@ void WriteMultiLevelPlotfileHDF5SingleDset (const std::string& plotfilename,
         }
         offsets[sortedGrids.size()] = currentOffset;
 
-        Vector<unsigned long long> procOffsets(nProcs);
-        int posCount(0);
-        Vector<unsigned long long> procBufferSize(nProcs);
+        Vector<unsigned long long> procOffsets(nProcs, 0);
+        Vector<unsigned long long> procBufferSize(nProcs, 0);
         unsigned long long totalOffset(0);
         for(auto it = gridMap.begin(); it != gridMap.end(); ++it) {
             int proc = it->first;
             Vector<Box> &boxesAtProc = it->second;
-            /* BL_ASSERT(posCount == proc); */
-            procOffsets[posCount] = totalOffset;
-            ++posCount;
+            procOffsets[proc] = totalOffset;
             procBufferSize[proc] = 0L;
             for(int b(0); b < boxesAtProc.size(); ++b) {
                 procBufferSize[proc] += boxesAtProc[b].numPts() * ncomp;
             }
             totalOffset += procBufferSize[proc];
+
+            /* if (level == 2) { */
+            /*     fprintf(stderr, "Rank %d: level %d, proc %d, offset %ld, size %ld, all size %ld\n", */
+            /*             myProc, level, proc, procOffsets[proc], procBufferSize[proc], totalOffset); */
+            /* } */
         }
 
         if(ParallelDescriptor::IOProcessor()) {
@@ -658,7 +649,12 @@ void WriteMultiLevelPlotfileHDF5SingleDset (const std::string& plotfilename,
         hid_t dataspace    = H5Screate_simple(1, hs_allprocsize, NULL);
         hid_t memdataspace = H5Screate_simple(1, hs_procsize, NULL);
 
-        H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, ch_offset, NULL, hs_procsize, NULL);
+        /* fprintf(stderr, "Rank %d: level %d, offset %ld, size %ld, all size %ld\n", myProc, level, ch_offset[0], hs_procsize[0], hs_allprocsize[0]); */
+
+        if (hs_procsize[0] == 0)
+            H5Sselect_none(dataspace);
+        else
+            H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, ch_offset, NULL, hs_procsize, NULL);
 
         Vector<Real> a_buffer(procBufferSize[myProc], -1.0);
         const MultiFab* data;
@@ -742,8 +738,6 @@ void WriteMultiLevelPlotfileHDF5SingleDset (const std::string& plotfilename,
 #else
     H5Fclose(fid);
 #endif
-
-    delete whichRD;
 } // WriteMultiLevelPlotfileHDF5SingleDset
 
 void WriteMultiLevelPlotfileHDF5MultiDset (const std::string& plotfilename,
@@ -917,18 +911,7 @@ void WriteMultiLevelPlotfileHDF5MultiDset (const std::string& plotfilename,
     if (fid < 0)
         FileOpenFailed(filename.c_str());
 
-    RealDescriptor *whichRD = nullptr;
-    if(FArrayBox::getFormat() == FABio::FAB_NATIVE) {
-        whichRD = FPC::NativeRealDescriptor().clone();
-    } else if(FArrayBox::getFormat() == FABio::FAB_NATIVE_32) {
-        whichRD = FPC::Native32RealDescriptor().clone();
-    } else if(FArrayBox::getFormat() == FABio::FAB_IEEE_32) {
-        whichRD = FPC::Ieee32NormalRealDescriptor().clone();
-    } else {
-        whichRD = FPC::NativeRealDescriptor().clone(); // to quiet clang static analyzer
-        Abort("VisMF::Write unable to execute with the current fab.format setting.  Use NATIVE, NATIVE_32 or IEEE_32");
-    }
-
+    auto whichRD = FArrayBox::getDataDescriptor();
     bool doConvert(*whichRD != FPC::NativeRealDescriptor());
     int whichRDBytes(whichRD->numBytes());
 
@@ -1019,15 +1002,12 @@ void WriteMultiLevelPlotfileHDF5MultiDset (const std::string& plotfilename,
         offsets[sortedGrids.size()] = currentOffset;
 
         Vector<unsigned long long> procOffsets(nProcs);
-        int posCount(0);
         Vector<unsigned long long> procBufferSize(nProcs);
         unsigned long long totalOffset(0);
         for(auto it = gridMap.begin(); it != gridMap.end(); ++it) {
             int proc = it->first;
             Vector<Box> &boxesAtProc = it->second;
-            /* BL_ASSERT(posCount == proc); */
-            procOffsets[posCount] = totalOffset;
-            ++posCount;
+            procOffsets[proc] = totalOffset;
             procBufferSize[proc] = 0L;
             for(int b(0); b < boxesAtProc.size(); ++b) {
                 /* procBufferSize[proc] += boxesAtProc[b].numPts() * ncomp; */
@@ -1081,7 +1061,10 @@ void WriteMultiLevelPlotfileHDF5MultiDset (const std::string& plotfilename,
         hid_t dataspace    = H5Screate_simple(1, hs_allprocsize, NULL);
         hid_t memdataspace = H5Screate_simple(1, hs_procsize, NULL);
 
-        H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, ch_offset, NULL, hs_procsize, NULL);
+        if (hs_procsize[0] == 0)
+            H5Sselect_none(dataspace);
+        else
+            H5Sselect_hyperslab(dataspace, H5S_SELECT_SET, ch_offset, NULL, hs_procsize, NULL);
 
         Vector<Real> a_buffer(procBufferSize[myProc]*ncomp, -1.0);
         Vector<Real> a_buffer_ind(procBufferSize[myProc], -1.0);
@@ -1178,15 +1161,13 @@ void WriteMultiLevelPlotfileHDF5MultiDset (const std::string& plotfilename,
 #else
     H5Fclose(fid);
 #endif
-
-    delete whichRD;
 } // WriteMultiLevelPlotfileHDF5MultiDset
 
 void
 WriteSingleLevelPlotfileHDF5 (const std::string& plotfilename,
                               const MultiFab& mf, const Vector<std::string>& varnames,
                               const Geometry& geom, Real time, int level_step,
-                              std::string &compression,
+                              const std::string &compression,
                               const std::string &versionName,
                               const std::string &levelPrefix,
                               const std::string &mfPrefix,
@@ -1205,7 +1186,7 @@ void
 WriteSingleLevelPlotfileHDF5SingleDset (const std::string& plotfilename,
                                         const MultiFab& mf, const Vector<std::string>& varnames,
                                         const Geometry& geom, Real time, int level_step,
-                                        std::string &compression,
+                                        const std::string &compression,
                                         const std::string &versionName,
                                         const std::string &levelPrefix,
                                         const std::string &mfPrefix,
@@ -1224,7 +1205,7 @@ void
 WriteSingleLevelPlotfileHDF5MultiDset (const std::string& plotfilename,
                                        const MultiFab& mf, const Vector<std::string>& varnames,
                                        const Geometry& geom, Real time, int level_step,
-                                       std::string &compression,
+                                       const std::string &compression,
                                        const std::string &versionName,
                                        const std::string &levelPrefix,
                                        const std::string &mfPrefix,

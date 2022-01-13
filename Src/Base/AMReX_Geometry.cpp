@@ -112,7 +112,7 @@ Geometry::Setup (const RealBox* rb, int coord, int const* isper) noexcept
 
     if (gg->ok) return;
 
-    BL_ASSERT(!OpenMP::in_parallel());
+    AMREX_ASSERT(!OpenMP::in_parallel());
 
     ParmParse pp("geometry");
 
@@ -120,17 +120,35 @@ Geometry::Setup (const RealBox* rb, int coord, int const* isper) noexcept
         gg->SetCoord( (CoordType) coord );
     } else {
         coord = 0;  // default is Cartesian coordinates
-        pp.query("coord_sys",coord);
+        pp.queryAdd("coord_sys",coord);
         gg->SetCoord( (CoordType) coord );
     }
 
     if (rb == nullptr) {
         Vector<Real> prob_lo(AMREX_SPACEDIM);
         Vector<Real> prob_hi(AMREX_SPACEDIM);
-        pp.getarr("prob_lo",prob_lo,0,AMREX_SPACEDIM);
-        BL_ASSERT(prob_lo.size() == AMREX_SPACEDIM);
-        pp.getarr("prob_hi",prob_hi,0,AMREX_SPACEDIM);
-        BL_ASSERT(prob_hi.size() == AMREX_SPACEDIM);
+        Vector<Real> prob_extent(AMREX_SPACEDIM);
+
+        for (int i = 0; i < AMREX_SPACEDIM; i++) { prob_lo[i] = 0.; }
+        pp.queryAdd("prob_lo", prob_lo, AMREX_SPACEDIM);
+        AMREX_ASSERT(prob_lo.size() == AMREX_SPACEDIM);
+
+        bool read_prob_hi = pp.queryarr("prob_hi",prob_hi,0,AMREX_SPACEDIM);
+        AMREX_ASSERT(prob_hi.size() == AMREX_SPACEDIM);
+
+        bool read_prob_extent = pp.queryarr("prob_extent",prob_extent,0,AMREX_SPACEDIM);
+        AMREX_ASSERT(prob_extent.size() == AMREX_SPACEDIM);
+
+        // We enforce that one and only one of prob_hi vs prob_extent is input
+        AMREX_ALWAYS_ASSERT(  read_prob_hi || read_prob_extent);
+        AMREX_ALWAYS_ASSERT(!(read_prob_hi && read_prob_extent));
+
+        if (read_prob_extent)
+        {
+            for (int i = 0; i < AMREX_SPACEDIM; i++)
+                prob_hi[i] = prob_lo[i] + prob_extent[i];
+        }
+
         gg->prob_domain.setLo(prob_lo);
         gg->prob_domain.setHi(prob_hi);
         gg->SetOffset(prob_lo.data());
@@ -146,7 +164,7 @@ Geometry::Setup (const RealBox* rb, int coord, int const* isper) noexcept
     if (isper == nullptr)
     {
         Vector<int> is_per(AMREX_SPACEDIM,0);
-        pp.queryarr("is_periodic",is_per,0,AMREX_SPACEDIM);
+        pp.queryAdd("is_periodic", is_per);
         for (int n = 0; n < AMREX_SPACEDIM; n++) {
             gg->is_periodic[n] = is_per[n];
         }
@@ -281,12 +299,22 @@ Geometry::periodicShift (const Box&      target,
 
     Box locsrc(src);
 
-    int nist,njst,nkst;
-    int niend,njend,nkend;
-    nist = njst = nkst = 0;
-    niend = njend = nkend = 0;
-    AMREX_D_TERM( nist , =njst , =nkst ) = -1;
-    AMREX_D_TERM( niend , =njend , =nkend ) = +1;
+    int nist  = -1;
+    int niend =  1;
+#if (AMREX_SPACEDIM > 1)
+    int njst  = -1;
+    int njend =  1;
+#else
+    int njst  = 0;
+    int njend = 0;
+#endif
+#if (AMREX_SPACEDIM > 2)
+    int nkst  = -1;
+    int nkend =  1;
+#else
+    int nkst  = 0;
+    int nkend = 0;
+#endif
 
     int ri,rj,rk;
     for (ri = nist; ri <= niend; ri++)
