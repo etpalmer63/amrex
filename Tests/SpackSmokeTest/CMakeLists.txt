@@ -17,6 +17,10 @@ set(_src_dir   ${_base_dir}/Source)
 set(_input_dir ${_base_dir}/Exec)
 
 
+if (AMReX_FORTRAN)
+    enable_language(Fortran)
+endif()
+
 if (AMReX_GPU_BACKEND STREQUAL "CUDA")
     enable_language(CUDA)
     find_package(AMReX REQUIRED CUDA)
