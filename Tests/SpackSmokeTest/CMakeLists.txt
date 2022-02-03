@@ -17,7 +17,7 @@ set(_src_dir   ${_base_dir}/Source)
 set(_input_dir ${_base_dir}/Exec)
 
 
-if (AMReX_FORTRAN)
+if (AMReX_FORTRAN_INTERFACES)
     enable_language(Fortran)
 endif()
 
