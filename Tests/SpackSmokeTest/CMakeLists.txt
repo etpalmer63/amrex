@@ -20,6 +20,23 @@ set(_input_dir ${_base_dir}/Exec)
 if (AMReX_GPU_BACKEND STREQUAL "CUDA")
     enable_language(CUDA)
     find_package(AMReX REQUIRED CUDA)
+elseif(AMReX_GPU_BACKEND STREQUAL "HIP")
+	message("**** HIP Enabled ")
+    set(AMReX_HIP ON)
+    find_package(AMReX REQUIRED HIP)
+    find_package(hip)
+    find_package(rocrand REQUIRED CONFIG)
+    find_package(rocprim REQUIRED CONFIG)
+    find_package(hiprand REQUIRED CONFIG)
+
+    if(DEFINED AMReX_AMD_ARCH)
+       # Set the GPU to compile for: semicolon-separated list
+       set(GPU_TARGETS "${AMReX_AMD_ARCH}" CACHE STRING "GPU targets to compile for" FORCE)
+       set(AMDGPU_TARGETS "${AMReX_AMD_ARCH}" CACHE STRING "GPU targets to compile for" FORCE)
+       mark_as_advanced(AMDGPU_TARGETS)
+       mark_as_advanced(GPU_TARGETS)
+    endif()
+
 else()
    # Use installed version of AMReX
    find_package(AMReX REQUIRED)
@@ -63,6 +80,14 @@ target_sources(install_test
 
 target_link_libraries(install_test PUBLIC AMReX::amrex)
 
+target_link_libraries(install_test PUBLIC hip::hiprand roc::rocrand roc::rocprim)
+target_link_libraries(install_test PUBLIC hip::device)
+
+#target_compile_options(install_test PUBLIC
+#           "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-mllvm;-amdgpu-early-inline-all=true;-mllvm;-amdgpu-function-calls=false>"
+#        )
+
+target_link_libraries(install_test PUBLIC ${HIP_LIBRARIES})
 
 # Additional CUDA configuration commands
 if (AMReX_GPU_BACKEND STREQUAL "CUDA")
