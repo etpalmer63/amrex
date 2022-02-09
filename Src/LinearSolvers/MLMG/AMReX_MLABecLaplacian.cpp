@@ -87,6 +87,12 @@ MLABecLaplacian::define_ab_coeffs ()
 MLABecLaplacian::~MLABecLaplacian ()
 {}
 
+/**
+ * Set scalar constants alpha and beta in the equation:
+ * for the Multi-Level Muti-Grid Laplacian Solver.
+ *
+ */
+
 void
 MLABecLaplacian::setScalars (Real a, Real b) noexcept
 {
@@ -101,6 +107,14 @@ MLABecLaplacian::setScalars (Real a, Real b) noexcept
     }
 }
 
+/**
+ * This function sets alpha to values from a single component
+ * mutlifab.
+ *
+ * \param [in] amrlev The level of the multifab.
+ * \param [in] alpha  Constant value to populate across mutlifab.
+ */
+
 void
 MLABecLaplacian::setACoeffs (int amrlev, const MultiFab& alpha)
 {
@@ -110,12 +124,28 @@ MLABecLaplacian::setACoeffs (int amrlev, const MultiFab& alpha)
     m_needs_update = true;
 }
 
+/**
+ * This function sets alpha to constant value across
+ * the mutlifab.
+ *
+ * \param [in] amrlev The level of the multifab.
+ * \param [in] alpha  Constant value to populate across mutlifab.
+ */
+
 void
 MLABecLaplacian::setACoeffs (int amrlev, Real alpha)
 {
     m_a_coeffs[amrlev][0].setVal(alpha);
     m_needs_update = true;
 }
+
+/**
+ * This function sets beta to be the values defined
+ * in the supplied multifab.
+ *
+ * \param [in] amrlev The level of the multifab.
+ * \param [in] beta Multifab for beta values.
+ */
 
 void
 MLABecLaplacian::setBCoeffs (int amrlev,
@@ -138,6 +168,14 @@ MLABecLaplacian::setBCoeffs (int amrlev,
     m_needs_update = true;
 }
 
+/**
+ * This function sets beta to a constant value across
+ * the mutlifab.
+ *
+ * \param [in] amrlev The level of the multifab.
+ * \param [in] beta   Constant value to populate across mutlifab.
+ */
+
 void
 MLABecLaplacian::setBCoeffs (int amrlev, Real beta)
 {
@@ -146,6 +184,15 @@ MLABecLaplacian::setBCoeffs (int amrlev, Real beta)
     }
     m_needs_update = true;
 }
+
+/**
+ * For each component in the supplied vector, this function
+ * sets beta to be the same value of the corresponding
+ * component across the multifab.
+ *
+ * \param [in] amrlev The level of the multifab.
+ * \param [in] beta   Vector of values to map to mutlifab components.
+ */
 
 void
 MLABecLaplacian::setBCoeffs (int amrlev, Vector<Real> const& beta)
