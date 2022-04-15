@@ -190,8 +190,8 @@ public:
     ParticleContainer ()
       :
       ParticleContainerBase(),
-      h_communicate_real_comp(NArrayReal, true),
-      h_communicate_int_comp(NArrayInt, true),
+      h_redistribute_real_comp(AMREX_SPACEDIM + NStructReal + NArrayReal, true),
+      h_redistribute_int_comp(2 + NStructInt + NArrayInt, true),
       m_runtime_comps_defined(false),
       m_num_runtime_real(0),
       m_num_runtime_int(0)
@@ -209,8 +209,8 @@ public:
     ParticleContainer (ParGDBBase* gdb)
         :
         ParticleContainerBase(gdb),
-        h_communicate_real_comp(NArrayReal, true),
-        h_communicate_int_comp(NArrayInt, true),
+        h_redistribute_real_comp(AMREX_SPACEDIM + NStructReal + NArrayReal, true),
+        h_redistribute_int_comp(2 + NStructInt + NArrayInt, true),
         m_runtime_comps_defined(false),
         m_num_runtime_real(0),
         m_num_runtime_int(0)
@@ -232,8 +232,8 @@ public:
                        const BoxArray            & ba)
         :
         ParticleContainerBase(geom, dmap, ba),
-        h_communicate_real_comp(NArrayReal, true),
-        h_communicate_int_comp(NArrayInt, true),
+        h_redistribute_real_comp(AMREX_SPACEDIM + NStructReal + NArrayReal, true),
+        h_redistribute_int_comp(2 + NStructInt + NArrayInt, true),
         m_runtime_comps_defined(false),
         m_num_runtime_real(0),
         m_num_runtime_int(0)
@@ -258,8 +258,8 @@ public:
                        const Vector<int>                 & rr)
         :
         ParticleContainerBase(geom, dmap, ba, rr),
-        h_communicate_real_comp(NArrayReal, true),
-        h_communicate_int_comp(NArrayInt, true),
+        h_redistribute_real_comp(AMREX_SPACEDIM + NStructReal + NArrayReal, true),
+        h_redistribute_int_comp(2 + NStructInt + NArrayInt, true),
         m_runtime_comps_defined(false),
         m_num_runtime_real(0),
         m_num_runtime_int(0)
@@ -283,8 +283,8 @@ public:
                        const Vector<IntVect>             & rr)
         :
         ParticleContainerBase(geom, dmap, ba, rr),
-        h_communicate_real_comp(NArrayReal, true),
-        h_communicate_int_comp(NArrayInt, true),
+        h_redistribute_real_comp(AMREX_SPACEDIM + NStructReal + NArrayReal, true),
+        h_redistribute_int_comp(2 + NStructInt + NArrayInt, true),
         m_runtime_comps_defined(false),
         m_num_runtime_real(0),
         m_num_runtime_int(0)
@@ -346,6 +346,25 @@ public:
                  const Vector<DistributionMapping> & dmap,
                  const Vector<BoxArray>            & ba,
                  const Vector<int>                 & rr)
+    {
+        this->ParticleContainerBase::Define(geom, dmap, ba, rr);
+        reserveData();
+        resizeData();
+    }
+
+    //! \brief Define a default-constructed ParticleContainer using a ParGDB object.
+    //! Multi-level version
+    //!
+    //! \param geom A Vector of Geometry objects, one for each level
+    //! \param dmap A Vector of DistributionMappings, one for each level
+    //! \param ba A Vector of BoxArrays, one for each level
+    //! \param rr A Vector of integer refinement ratios, of size num_levels - 1. rr[n] gives the
+    //! refinement ratio between levels n and n+1
+    //!
+    void Define (const Vector<Geometry>            & geom,
+                 const Vector<DistributionMapping> & dmap,
+                 const Vector<BoxArray>            & ba,
+                 const Vector<IntVect>             & rr)
     {
         this->ParticleContainerBase::Define(geom, dmap, ba, rr);
         reserveData();
@@ -722,6 +741,7 @@ public:
       * \param real_comp_names for each real component, a name to label the data with
       * \param int_comp_names for each integer component, a name to label the data with
       * \param f callable that returns whether a given particle should be written or not
+      * \param is_checkpoint whether the data is written to a checkpoint or plotfile
       */
     template <class F>
     void WriteBinaryParticleData (const std::string& dir,
@@ -730,7 +750,7 @@ public:
                                   const Vector<int>& write_int_comp,
                                   const Vector<std::string>& real_comp_names,
                                   const Vector<std::string>&  int_comp_names,
-                                                                  F&& f) const;
+                                  F&& f, bool is_checkpoint=false) const;
 
     void CheckpointPre ();
 
@@ -772,7 +792,7 @@ public:
      * \param name The name of the sub-directory for this particle type (i.e. "Tracer")
      * \param f callable that returns whether or not to write each particle
      */
-    template <class F, typename std::enable_if<!std::is_same<F, Vector<std::string>>::value>::type* = nullptr>
+    template <class F, typename std::enable_if<!std::is_same<F, Vector<std::string>&>::value>::type* = nullptr>
     void WritePlotFile (const std::string& dir, const std::string& name, F&& f) const;
 
     /**
@@ -1199,7 +1219,7 @@ public:
     {
         m_runtime_comps_defined = true;
         m_num_runtime_real++;
-        h_communicate_real_comp.push_back(communicate);
+        h_redistribute_real_comp.push_back(communicate);
         SetParticleSize();
     }
 
@@ -1209,7 +1229,7 @@ public:
     {
         m_runtime_comps_defined = true;
         m_num_runtime_int++;
-        h_communicate_int_comp.push_back(communicate);
+        h_redistribute_int_comp.push_back(communicate);
         SetParticleSize();
     }
 
@@ -1219,10 +1239,37 @@ public:
     int NumRealComps () const { return NArrayReal + NumRuntimeRealComps(); }
     int NumIntComps  () const { return NArrayInt  + NumRuntimeIntComps() ; }
 
-    Vector<int> h_communicate_real_comp;
-    Vector<int> h_communicate_int_comp;
-    Gpu::DeviceVector<int> d_communicate_real_comp;
-    Gpu::DeviceVector<int> d_communicate_int_comp;
+    /** type trait to translate one particle container to another, with changed allocator */
+    template <template<class> class NewAllocator=amrex::DefaultAllocator>
+    using ContainerLike = amrex::ParticleContainer<NStructReal, NStructInt, NArrayReal, NArrayInt, NewAllocator>;
+
+    /** Create an empty particle container
+     *
+     * This creates a new AMReX particle container type with same compile-time
+     * and run-time attributes. But, it can change its allocator. This is
+     * helpful when creating temporary particle buffers for filter operations
+     * and device-to-host copies.
+     *
+     * @tparam Allocator AMReX allocator, e.g., amrex::PinnedArenaAllocator
+     * @return an empty particle container
+     * */
+    template <template<class> class NewAllocator=amrex::DefaultAllocator>
+    ContainerLike<NewAllocator>
+    make_alike () const
+    {
+        ContainerLike<NewAllocator> tmp(m_gdb);
+
+        // add runtime real comps to tmp
+        for (int ic = 0; ic < this->NumRuntimeRealComps(); ++ic) { tmp.AddRealComp(false); }
+
+        // add runtime int comps to tmp
+        for (int ic = 0; ic < this->NumRuntimeIntComps(); ++ic) { tmp.AddIntComp(false); }
+
+        return tmp;
+    }
+
+    Vector<int> h_redistribute_real_comp;
+    Vector<int> h_redistribute_int_comp;
 
     //! Variables for i/o optimization saved for pre and post checkpoint
     mutable bool levelDirectoriesCreated;
@@ -1276,7 +1323,7 @@ public:
     WriteParticles (int level, std::ofstream& ofs, int fnum,
                     Vector<int>& which, Vector<int>& count, Vector<Long>& where,
                     const Vector<int>& write_real_comp, const Vector<int>& write_int_comp,
-                    const Vector<std::map<std::pair<int, int>,IntVector>>& particle_io_flags) const;
+                    const Vector<std::map<std::pair<int, int>,IntVector>>& particle_io_flags, bool is_checkpoint) const;
 #ifdef AMREX_USE_HDF5
 #include "AMReX_ParticlesHDF5.H"
 #endif
@@ -1284,7 +1331,7 @@ public:
 protected:
 
     template <class RTYPE>
-    void ReadParticles (int cnt, int grd, int lev, std::ifstream& ifs, int finest_level_in_file);
+    void ReadParticles (int cnt, int grd, int lev, std::ifstream& ifs, int finest_level_in_file, bool convert_ids);
 
     void SetParticleSize ();
 

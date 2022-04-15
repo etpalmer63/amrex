@@ -74,7 +74,7 @@ private:
 
         // By default, do nothing
         set_rhs([](T& /* S_rhs */, const T& /* S_data */, const amrex::Real /* time */){});
-        set_fast_rhs([](T& /* S_rhs */, const T& /* S_extra */, const T& /* S_data */, const amrex::Real /* time */){});
+        set_fast_rhs([](T& /* S_rhs */, T& /* S_extra */, const T& /* S_data */, const amrex::Real /* time */){});
     }
 
 public:
@@ -141,7 +141,7 @@ public:
         integrator_ptr->set_rhs(F);
     }
 
-    void set_fast_rhs (std::function<void(T&, const T&, const T&, const amrex::Real)> F)
+    void set_fast_rhs (std::function<void(T&, T&, const T&, const amrex::Real)> F)
     {
         integrator_ptr->set_fast_rhs(F);
     }
@@ -149,6 +149,16 @@ public:
     void set_slow_fast_timestep_ratio (const int timestep_ratio = 1)
     {
         integrator_ptr->set_slow_fast_timestep_ratio(timestep_ratio);
+    }
+
+    void set_fast_timestep (const Real fast_dt = 1.0)
+    {
+        integrator_ptr->set_fast_timestep(fast_dt);
+    }
+
+    Real get_fast_timestep ()
+    {
+        return integrator_ptr->get_fast_timestep();
     }
 
     std::function<void ()> get_post_timestep ()
@@ -166,7 +176,7 @@ public:
         return integrator_ptr->get_rhs();
     }
 
-    std::function<void(T&, const T&, const T&, const amrex::Real)> get_fast_rhs ()
+    std::function<void(T&, T&, const T&, const amrex::Real)> get_fast_rhs ()
     {
         return integrator_ptr->get_fast_rhs();
     }

@@ -65,7 +65,7 @@ struct IntegratorOps<T, typename std::enable_if<std::is_base_of<amrex::ParticleC
         {
             const int npy  = pty.numParticles();
             const int npx  = ptx.numParticles();
-            AMREX_ASSERT(npy == npx);
+            AMREX_ALWAYS_ASSERT(npy == npx);
 
             ParticleType* psy = &(pty.GetArrayOfStructs()[0]);
             ParticleType* psx = &(ptx.GetArrayOfStructs()[0]);
@@ -158,7 +158,7 @@ private:
    /**
     * \brief FastFun is the fast timescale right-hand-side function for a multirate integration problem.
     */
-    std::function<void(T&, const T&, const T&, const amrex::Real)> FastFun;
+    std::function<void(T&, T&, const T&, const amrex::Real)> FastFun;
 
 protected:
    /**
@@ -169,7 +169,12 @@ protected:
    /**
     * \brief For multirate problems, the ratio of slow timestep size / fast timestep size (int)
     */
-    int slow_fast_timestep_ratio;
+    int slow_fast_timestep_ratio = 0;
+
+   /**
+    * \brief For multirate problems, the fast timestep size (Real)
+    */
+    Real fast_timestep = 0.0;
 
    /**
     * \brief The post_update function is called by the integrator on state data before using it to evaluate a right-hand side.
@@ -179,7 +184,7 @@ protected:
 public:
     IntegratorBase () {}
 
-    IntegratorBase (const T& S_data) {}
+    IntegratorBase (const T& /* S_data */) {}
 
     virtual ~IntegratorBase () {}
 
@@ -190,7 +195,7 @@ public:
         Fun = F;
     }
 
-    void set_fast_rhs (std::function<void(T&, const T&, const T&, const amrex::Real)> F)
+    void set_fast_rhs (std::function<void(T&, T&, const T&, const amrex::Real)> F)
     {
         FastFun = F;
     }
@@ -198,6 +203,11 @@ public:
     void set_slow_fast_timestep_ratio (const int timestep_ratio = 1)
     {
         slow_fast_timestep_ratio = timestep_ratio;
+    }
+
+    void set_fast_timestep (const Real fast_dt = 1.0)
+    {
+        fast_timestep = fast_dt;
     }
 
     void set_post_update (std::function<void (T&, amrex::Real)> F)
@@ -215,7 +225,7 @@ public:
         return Fun;
     }
 
-    std::function<void(T&, const T&, const T&, const amrex::Real)> get_fast_rhs ()
+    std::function<void(T&, T&, const T&, const amrex::Real)> get_fast_rhs ()
     {
         return FastFun;
     }
@@ -225,12 +235,17 @@ public:
         return slow_fast_timestep_ratio;
     }
 
+    Real get_fast_timestep ()
+    {
+        return fast_timestep;
+    }
+
     void rhs (T& S_rhs, const T& S_data, const amrex::Real time)
     {
         Fun(S_rhs, S_data, time);
     }
 
-    void fast_rhs (T& S_rhs, const T& S_extra, const T& S_data, const amrex::Real time)
+    void fast_rhs (T& S_rhs, T& S_extra, const T& S_data, const amrex::Real time)
     {
         FastFun(S_rhs, S_extra, S_data, time);
     }

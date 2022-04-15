@@ -480,6 +480,8 @@ The list of available options is reported in the :ref:`table <tab:cmakevar>` bel
    +------------------------------+-------------------------------------------------+-------------------------+-----------------------+
    | AMReX_MEM_PROFILE            |  Build with memory-profiling support            | NO                      | YES, NO               |
    +------------------------------+-------------------------------------------------+-------------------------+-----------------------+
+   | AMReX_TP_PROFILE             |  Third-party profiling options                  | IGNORE                  | CRAYPAT,FORGE,VTUNE   |
+   +------------------------------+-------------------------------------------------+-------------------------+-----------------------+
    | AMReX_TESTING                |  Build for testing --sets MultiFab initial data | NO                      | YES, NO               |
    |                              |  to NaN                                         |                         |                       |
    +------------------------------+-------------------------------------------------+-------------------------+-----------------------+
@@ -494,6 +496,8 @@ The list of available options is reported in the :ref:`table <tab:cmakevar>` bel
    | AMReX_ASSERTIONS             |  Build with assertions turned on                | NO                      | YES, NO               |
    +------------------------------+-------------------------------------------------+-------------------------+-----------------------+
    | AMReX_BOUND_CHECK            |  Enable bound checking in Array4 class          | NO                      | YES, NO               |
+   +------------------------------+-------------------------------------------------+-------------------------+-----------------------+
+   | AMReX_EXPORT_DYNAMIC         |  Enable backtrace on macOS                      | NO (unless Darwin)      | YES, NO               |
    +------------------------------+-------------------------------------------------+-------------------------+-----------------------+
    | AMReX_SENSEI                 |  Enable the SENSEI in situ infrastucture        | NO                      | YES, NO               |
    +------------------------------+-------------------------------------------------+-------------------------+-----------------------+

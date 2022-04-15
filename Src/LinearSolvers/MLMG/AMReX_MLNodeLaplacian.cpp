@@ -87,6 +87,8 @@ MLNodeLaplacian::define (const Vector<Geometry>& a_geom,
     const int ncomp_i = algoim::numIntgs;
 #endif
     m_integral.resize(m_num_amr_levels);
+    m_surface_integral.resize(m_num_amr_levels);
+    m_eb_vel_dot_n.resize(m_num_amr_levels);
     for (int amrlev = 0; amrlev < m_num_amr_levels; ++amrlev)
     {
 #ifdef AMREX_USE_EB
@@ -254,6 +256,7 @@ MLNodeLaplacian::prepareForSolve ()
 
 #ifdef AMREX_USE_EB
     buildIntegral();
+    if (m_build_surface_integral) buildSurfaceIntegral();
 #endif
 
     buildStencil();
@@ -476,7 +479,8 @@ MLNodeLaplacian::interpolation (int amrlev, int fmglev, MultiFab& fine, const Mu
                     mlndlap_interpadd_c(i,j,k,ffab,cfab,mfab);
                 });
             }
-            else if (m_use_harmonic_average && fmglev > 0)
+            else if ( (m_use_harmonic_average && fmglev > 0) ||
+                       m_use_mapped )
             {
                 AMREX_D_TERM(Array4<Real const> const& sxfab = sigma[0]->const_array(mfi);,
                              Array4<Real const> const& syfab = sigma[1]->const_array(mfi);,
@@ -686,7 +690,8 @@ MLNodeLaplacian::normalize (int amrlev, int mglev, MultiFab& mf) const
                     mlndlap_normalize_sten(i,j,k,arr,stenarr,dmskarr,s0_norm0);
                 });
             }
-            else if (m_use_harmonic_average && mglev > 0)
+            else if ( (m_use_harmonic_average && mglev > 0) ||
+                       m_use_mapped )
             {
                 AMREX_D_TERM(Array4<Real const> const& sxarr = sigma[0]->const_array(mfi);,
                              Array4<Real const> const& syarr = sigma[1]->const_array(mfi);,
@@ -797,5 +802,62 @@ MLNodeLaplacian::checkPoint (std::string const& file_name) const
         }
     }
 }
+
+#ifdef AMREX_USE_EB
+void
+MLNodeLaplacian::setEBInflowVelocity (int amrlev, const MultiFab& eb_vel)
+{
+    const int mglev = 0;
+    if (m_eb_vel_dot_n[amrlev] == nullptr) {
+        m_eb_vel_dot_n[amrlev] = std::make_unique<MultiFab>(
+                m_grids[amrlev][mglev], m_dmap[amrlev][mglev],
+                1, 1, MFInfo(), *m_factory[amrlev][mglev]);
+    }
+
+    m_eb_vel_dot_n[amrlev]->setVal(0.0);
+
+    auto ebfactory = dynamic_cast<EBFArrayBoxFactory const*>(m_factory[amrlev][mglev].get());
+
+    MFItInfo mfi_info;
+    if (Gpu::notInLaunchRegion()) mfi_info.EnableTiling().SetDynamic(true);
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(*m_eb_vel_dot_n[amrlev], mfi_info); mfi.isValid(); ++mfi)
+    {
+        const Box& bx = mfi.tilebox();
+        const auto& flagfab = ebfactory->getMultiEBCellFlagFab()[mfi];
+
+        if (flagfab.getType(bx) == FabType::singlevalued) {
+            Array4<Real> const& eb_vel_dot_n = m_eb_vel_dot_n[amrlev]->array(mfi);
+            Array4<Real const> const& ebvelin = eb_vel.const_array(mfi);
+            Array4<Real const> const& bnorm = ebfactory->getBndryNormal().const_array(mfi);
+
+            ParallelFor(bx, [eb_vel_dot_n,ebvelin,bnorm]
+             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                for(int n = 0; n < AMREX_SPACEDIM; ++n)
+                {
+                    eb_vel_dot_n(i,j,k) += ebvelin(i,j,k,n)*bnorm(i,j,k,n);
+                }
+            });
+        }
+    }
+
+    m_eb_vel_dot_n[amrlev]->FillBoundary(m_geom[amrlev][mglev].periodicity());
+
+#if (AMREX_SPACEDIM == 2)
+    const int ncomp_si = 3;
+#else
+    const int ncomp_si = algoim::numSurfIntgs;
+#endif
+    m_surface_integral[amrlev] = std::make_unique<MultiFab>(m_grids[amrlev][0],
+                                                    m_dmap[amrlev][0],
+                                                    ncomp_si, 1, MFInfo(),
+                                                    *m_factory[amrlev][0]);
+    // Turn on flag for building surface integrals
+    m_build_surface_integral = true;
+}
+#endif
 
 }

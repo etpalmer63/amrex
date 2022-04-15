@@ -220,7 +220,7 @@ check the :ref:`table <tab:cmakecudavar>` below.
    | AMReX_CUDA_ERROR_CAPTURE_THIS|  Error if a CUDA lambda captures a class' this  | NO          | YES, NO         |
    +------------------------------+-------------------------------------------------+-------------+-----------------+
    | AMReX_CUDA_ERROR_CROSS       |  Error if a host function is called from a host | NO          | YES, NO         |
-   |  _EXECUTION_SPACE_CALL       |   device function                               |             |                 |
+   | _EXECUTION_SPACE_CALL        |  device function                                |             |                 |
    +------------------------------+-------------------------------------------------+-------------+-----------------+
    | AMReX_CUDA_KEEP_FILES        |  Keep intermediately files (folder: nvcc_tmp)   | NO          | YES, NO         |
    +------------------------------+-------------------------------------------------+-------------+-----------------+
@@ -888,8 +888,6 @@ Instead of using :cpp:`Elixir`, we can write code like below,
       const Box& bx = mfi.tilebox();
       FArrayBox tmp_fab(bx, numcomps, The_Async_Arena());
       Array4<Real> const& tmp_arr = tmp_fab.array();
-      FArrayBox tmp_fab_2;
-      tmp_fab_2.resize(bx, numcomps, The_Async_Arena());
 
       // GPU kernels using the temporary
     }

@@ -7,19 +7,23 @@ template <class F, typename std::enable_if<IsBaseFab<F>::value,int>::type Z>
 void
 FabArray<FAB>::FBEP_nowait (int scomp, int ncomp, const IntVect& nghost,
                             const Periodicity& period, bool cross,
-                            bool enforce_periodicity_only)
+                            bool enforce_periodicity_only,
+                            bool override_sync)
 {
     AMREX_ASSERT_WITH_MESSAGE(!fbd, "FillBoundary_nowait() called when comm operation already in progress.");
+    AMREX_ASSERT(!enforce_periodicity_only || !override_sync);
 
     bool work_to_do;
     if (enforce_periodicity_only) {
         work_to_do = period.isAnyPeriodic();
+    } else if (override_sync) {
+        work_to_do = (nghost.max() > 0) || !is_cell_centered();
     } else {
         work_to_do = nghost.max() > 0;
     }
     if (!work_to_do) { return; }
 
-    const FB& TheFB = getFB(nghost, period, cross, enforce_periodicity_only);
+    const FB& TheFB = getFB(nghost, period, cross, enforce_periodicity_only, override_sync);
 
     if (ParallelContext::NProcsSub() == 1)
     {
@@ -72,10 +76,6 @@ FabArray<FAB>::FBEP_nowait (int scomp, int ncomp, const IntVect& nghost,
     fbd->fb    = &TheFB;
     fbd->scomp = scomp;
     fbd->ncomp = ncomp;
-    fbd->nghost = nghost;
-    fbd->period = period;
-    fbd->cross = cross;
-    fbd->epo   = enforce_periodicity_only;
     fbd->tag   = SeqNum;
 
     //
@@ -563,72 +563,48 @@ FabArray<FAB>::ParallelCopy_finish ()
 
 template <class FAB>
 void
-FabArray<FAB>::copyTo (FAB&       dest,
-                       const Box& subbox,
-                       int        scomp,
-                       int        dcomp,
-                       int        ncomp,
-                       int        nghost) const
+FabArray<FAB>::copyTo (FAB& dest, int scomp, int dcomp, int ncomp, int nghost) const
 {
     BL_PROFILE("FabArray::copy(fab)");
 
     BL_ASSERT(dcomp + ncomp <= dest.nComp());
-    BL_ASSERT(nghost <= nGrow());
+    BL_ASSERT(IntVect(nghost).allLE(nGrowVect()));
 
-    if (ParallelContext::NProcsSub() == 1)
-    {
-        for (int j = 0, N = size(); j < N; ++j)
-        {
-            const Box& bx = amrex::grow(boxarray[j],nghost);
-            const Box& destbox = bx & subbox;
-            if (destbox.ok())
-            {
-                dest.template copy<RunOn::Host>(get(j),destbox,scomp,destbox,dcomp,ncomp);
-            }
-        }
+    int root_proc = this->DistributionMap()[0];
 
-        return;
+    BoxArray ba(dest.box());
+    DistributionMapping dm(Vector<int>{root_proc});
+    FabArray<FAB> destmf(ba, dm, ncomp, 0, MFInfo().SetAlloc(false));
+    if (ParallelDescriptor::MyProc() == root_proc) {
+        destmf.setFab(0, FAB(dest, amrex::make_alias, dcomp, ncomp));
     }
 
-    //
-    //  Note that subbox must be identical on each process!!
-    //
-#ifdef AMREX_DEBUG
-    {
-        BoxCommHelper bch(subbox);
-        ParallelDescriptor::Bcast(bch.data(), bch.size(), 0, ParallelContext::CommunicatorSub());
-        const Box& bx0 = bch.make_box();
-        BL_ASSERT(subbox == bx0);
+    destmf.ParallelCopy(*this, scomp, 0, ncomp, nghost, 0);
+
+#ifdef BL_USE_MPI
+    using T = typename FAB::value_type;
+    if (ParallelContext::NProcsSub() > 1) {
+        Long count = dest.numPts()*ncomp;
+        T* const p0 = dest.dataPtr(dcomp);
+        T* pb = p0;
+#ifdef AMREX_USE_GPU
+        if (dest.arena()->isDevice()) {
+            pb = (T*)The_Pinned_Arena()->alloc(sizeof(T)*count);
+            Gpu::dtoh_memcpy_async(pb, p0, sizeof(T)*count);
+            Gpu::streamSynchronize();
+        }
+#endif
+        ParallelDescriptor::Bcast(pb, count, ParallelContext::global_to_local_rank(root_proc),
+                                  ParallelContext::CommunicatorSub());
+#ifdef AMREX_USE_GPU
+        if (pb != p0) {
+            Gpu::htod_memcpy_async(p0, pb, sizeof(T)*count);
+            Gpu::streamSynchronize();
+        }
+#endif
     }
 #endif
-
-    FAB ovlp;
-
-    std::vector< std::pair<int,Box> > isects;
-    boxarray.intersections(subbox, isects, false, nghost);
-
-    for (int j = 0, M = isects.size(); j < M; ++j)
-    {
-        const int  k  = isects[j].first;
-        const Box& bx = isects[j].second;
-
-        ovlp.resize(bx,ncomp);
-
-        if (ParallelDescriptor::MyProc() == distributionMap[k])
-        {
-            ovlp.template copy<RunOn::Host>(get(k),bx,scomp,bx,0,ncomp);
-        }
-
-        const int N = bx.numPts()*ncomp;
-
-        ParallelDescriptor::Bcast(ovlp.dataPtr(),N,
-                                  ParallelContext::global_to_local_rank(distributionMap[k]),
-                                  ParallelContext::CommunicatorSub());
-
-        dest.template copy<RunOn::Host>(ovlp,bx,0,bx,dcomp,ncomp);
-    }
 }
-
 
 #ifdef BL_USE_MPI
 template <class FAB>
