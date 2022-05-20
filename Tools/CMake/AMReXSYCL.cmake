@@ -4,7 +4,7 @@
 # For the time being, only dpc++ is supported
 #
 message("*** Using Custom AMReXSYCL file ****")
-
+find_package(IntelDPCPP REQUIRED)
 
 # Provide a cache variable for the dpc++ root directory installation by probing
 # the compiler
