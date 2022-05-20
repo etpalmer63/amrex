@@ -4,7 +4,7 @@
 # For the time being, only dpc++ is supported
 #
 message("*** Using Custom AMReXSYCL file ****")
-#find_package(IntelDPCPP REQUIRED
+find_package(IntelDPCPP REQUIRED
 #    PATHS /soft/restricted/CNDA/sdk/2022.01.30.001/oneapi/compiler/pseudo-20220223/compiler/linux/IntelDPCPP )
 #message("*** SYCL_INCLUDE_DIR= ${SYCL_INCLUDE_DIR} ")
 #message("*** SYCL_LIBRARY_DIR= ${SYCL_LIBRARY_DIR} ")
