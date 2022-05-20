@@ -12,6 +12,8 @@ execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version  OUTPUT_VARIABLE _tmp)
 string(REGEX MATCH "InstalledDir: (.*)" _tmp "${_tmp}")
 unset(_tmp)
 
+message("DPCPP_ROOT= ${DPCPP_ROOT}")
+
 get_filename_component(DPCPP_ROOT ${CMAKE_MATCH_1} DIRECTORY CACHE)
 message(STATUS "dpc++ root directory: ${DPCPP_ROOT}")
 
