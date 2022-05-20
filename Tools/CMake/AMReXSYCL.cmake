@@ -5,7 +5,7 @@
 #
 message("*** Using Custom AMReXSYCL file ****")
 find_package(IntelDPCPP REQUIRED
-	     PATH /soft/restricted/CNDA/sdk/2022.01.30.001/oneapi/compiler/pseudo-20220223/compiler/linux/IntelDPCPP )
+    PATHS /soft/restricted/CNDA/sdk/2022.01.30.001/oneapi/compiler/pseudo-20220223/compiler/linux/IntelDPCPP )
 message("*** SYCL_INCLUDE_DIR= ${SYCL_INCLUDE_DIR} ")
 message("*** SYCL_LIBRARY_DIR= ${SYCL_LIBRARY_DIR} ")
 
