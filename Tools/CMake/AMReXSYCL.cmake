@@ -3,6 +3,8 @@
 # These targets provides build/link requirements for the SYCL language.
 # For the time being, only dpc++ is supported
 #
+message("*** Using Custom AMReXSYCL file ****")
+
 
 # Provide a cache variable for the dpc++ root directory installation by probing
 # the compiler
