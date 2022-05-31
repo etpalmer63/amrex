@@ -108,6 +108,7 @@ in the particle struct as particle *data*, and components stored in the
 Struct-of-Arrays as particle *attributes*. See the figure
 :ref:`below<fig:particles:particle_arrays>` for an illustration.
 
+..
 .. raw:: latex
 
    \begin{center}
@@ -115,6 +116,7 @@ Struct-of-Arrays as particle *attributes*. See the figure
 .. _fig:particles:particle_arrays:
 
 .. figure:: ./Particle/particle_arrays.png
+   :align: center
 
    An illustration of how the particle data for a single tile is arranged in
    memory. This particle container has been defined with :cpp:`NStructReal =
@@ -129,6 +131,7 @@ Struct-of-Arrays as particle *attributes*. See the figure
    and :cpp:`n`, respectively. We have assumed that the particles are double
    precision.
 
+..
 .. raw:: latex
 
    \end{center}
