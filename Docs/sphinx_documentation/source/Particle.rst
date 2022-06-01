@@ -108,11 +108,6 @@ in the particle struct as particle *data*, and components stored in the
 Struct-of-Arrays as particle *attributes*. See the figure
 :ref:`below<fig:particles:particle_arrays>` for an illustration.
 
-..
-.. raw:: latex
-
-   \begin{center}
-
 .. _fig:particles:particle_arrays:
 
 .. figure:: ./Particle/particle_arrays.png
@@ -130,11 +125,6 @@ Struct-of-Arrays as particle *attributes*. See the figure
    the real and integer arrays are labelled ``foo``, ``bar``, ``l``,
    and ``n``, respectively. We have assumed that the particles are double
    precision.
-
-..
-.. raw:: latex
-
-   \end{center}
 
 To see why the distinction between AoS and SoA data is important, consider the
 following extreme case. Say you have particles that carry 100 different
